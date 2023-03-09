@@ -4,7 +4,6 @@
 
 ## Запуск проекта:
 * Склонировать репозиторий на локальный компьютер:
-
   ``` git clone git@github.com:Glaser1/News-Scrapper-on-bs4-bot-on-aiogram.git ```
   
 * Шаблон наполнения .env-файла:
