@@ -25,3 +25,5 @@
   В терминале перейдите в директорию проекта и запустите приложение командой: 
     ``` python aiogram_bot.py ```
 
+## Стек
+  Python, beautifulsoap4, aiogram, lxml
