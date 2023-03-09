@@ -99,7 +99,7 @@ def get_mining_fresh_news():
 
 def main():
     if os.path.isfile(FILE_PATH) and os.path.getsize(FILE_PATH) > 0:
-        get_mining_fresh_news()
+        return get_mining_fresh_news()
     else:
         get_mining_news()
 

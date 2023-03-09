@@ -7,7 +7,7 @@ from aiogram import Bot, Dispatcher, executor, types, exceptions
 from aiogram.dispatcher.filters import Text
 from aiogram.utils.markdown import hbold, hlink
 
-from scrapper import main
+from main import main, get_mining_fresh_news
 
 load_dotenv()
 
@@ -29,7 +29,8 @@ async def send_welcome(message: types.Message):
 @dp.message_handler(Text(equals='Свежие новости'))
 async def send_fresh_news(message: types.Message):
     """ Отправить свежие новости в telegram по кнопке 'Свежие новости'. """
-    fresh_news = main()
+
+    fresh_news = get_mining_fresh_news()
     if not fresh_news:
         await message.answer('Свежих новостей нет')
     else:
@@ -44,22 +45,21 @@ async def send_fresh_news(message: types.Message):
 
 async def check_if_fresh_news():
     """ Проверка на наличие свежих новостей каждые 2 часа и их автоматическая отправка в tg-чат. """
+
     while True:
         fresh_news = main()
         if fresh_news:
             for k, v in sorted(fresh_news.items()):
                 news = (f"{hbold(v['article_date'])}\n"
-                        f"{hlink(v['article_title'], v['article_url'])}")
+                        f"{hbold(v['article_category'])}\n"
+                        f"{hlink(v['article_title'], v['article_url'])}\n")
                 try:
                     await bot.send_message(USER_ID, news)
                 except exceptions.RetryAfter as e:
                     await asyncio.sleep(e.timeout)
-        else:
-            await bot.send_message(USER_ID, 'Новостей нет')
-        await asyncio.sleep(7200)
+        await asyncio.sleep(10)
 
 
 if __name__ == '__main__':
-    loop = asyncio.get_event_loop()
-    loop.create_task(check_if_fresh_news())
+    asyncio.run(check_if_fresh_news())
     executor.start_polling(dp)
