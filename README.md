@@ -11,7 +11,7 @@
   ``` git clone git@github.com:Glaser1/News-Scrapper-on-bs4-bot-on-aiogram.git ```
   
   
-* Шаблон наполнения .env-файла:
+## Шаблон наполнения .env-файла:
   ``` token = <token вашего бота> ``` 
   ``` file_path = <expamle.json> - название json-файла с сохраненными статьями # Вместо 'example' - произвольное название ```
   ``` tg_user_id = <ваш telegram_id> ```
