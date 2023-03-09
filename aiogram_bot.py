@@ -56,7 +56,7 @@ async def check_if_fresh_news():
                     await asyncio.sleep(e.timeout)
         else:
             await bot.send_message(USER_ID, 'Новостей нет')
-        await asyncio.sleep(10)
+        await asyncio.sleep(7200)
 
 
 if __name__ == '__main__':

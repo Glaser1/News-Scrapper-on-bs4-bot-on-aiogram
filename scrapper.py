@@ -6,7 +6,7 @@ from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 
 load_dotenv()
-FILE_PATH = './kitco_news.json'
+FILE_PATH = os.getenv('file_path')
 
 
 def create_an_id(url):
@@ -23,10 +23,9 @@ def get_mining_news():
     r = requests.get(url=url)
     soup = BeautifulSoup(r.text, 'lxml')
     news = dict()
-    website_category_url = "https://www.kitco.com/mining/"
     mining_news = soup.find_all('div', class_='mining-news--with-image')
     for new in mining_news:
-        article_url = (f"{website_category_url}"
+        article_url = (f"{url}"
                        f"{new.find('div', class_='mining-news--content').find('a').get('href')}")
 
         article_title = new.find('div', class_='mining-news--content').find('a').text.strip()
@@ -60,12 +59,11 @@ def get_mining_fresh_news():
     url = 'https://www.kitco.com/mining/'
     r = requests.get(url=url)
     soup = BeautifulSoup(r.text, 'lxml')
-    website_category_url = "https://www.kitco.com/mining/"
     mining_news = soup.find_all('div', class_='mining-news--with-image')
     article_category = 'Mining news'
 
     for new in mining_news:
-        article_url = (f"{website_category_url}"
+        article_url = (f"{url}"
                        f"{new.find('div', class_='mining-news--content').find('a').get('href')}")
         article_id = create_an_id(article_url)
         if article_id in news:
@@ -102,10 +100,9 @@ def get_mining_fresh_news():
 def main():
     if os.path.isfile(FILE_PATH) and os.path.getsize(FILE_PATH) > 0:
         get_mining_fresh_news()
-        print('trying to get fresh news')
     else:
-        print('getting all news')
         get_mining_news()
 
 
-
+if __name__ == '__main__':
+    main()
