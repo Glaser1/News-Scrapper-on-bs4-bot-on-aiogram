@@ -1,4 +1,4 @@
-# new-scrapper-aiogram_bot
+# news-scrapper-aiogram_bot
 
 Парсер статей с https://www.kitco.com/mining/ и асинхронный телеграм-бот для отправки новостей.
 
