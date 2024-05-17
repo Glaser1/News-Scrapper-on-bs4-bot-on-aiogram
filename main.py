@@ -6,100 +6,116 @@ from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 
 load_dotenv()
-FILE_PATH = os.getenv('file_path')
+FILE_PATH: str | None = os.getenv('FILE_PATH')
+KITCO_NEWS_URL = 'https://www.kitco.com/mining/'
 
 
-def create_an_id(url):
-    id = hashlib.sha256()
-    id.update(url.encode('utf-8'))
-    id = str(int(id.hexdigest(), 16))[:6]
-    return id
+def create_an_id_for_article(article_url: str) -> str:
+    """
+    Создает уникальный идентификатор для статьи на основе URL
+    (для использования в качестве ключа для словаря новостей и json-файла).
+
+    Args:
+        article_url (str): URL статьи.
+
+    Returns:
+        str: Уникальный идентификатор статьи.
+    """
+    article_url_bytes: bytes = article_url.encode('UTF-8')
+    article_id: str = hashlib.sha256(article_url_bytes).hexdigest()
+    return article_id[:8]
 
 
-def get_mining_news():
-    """ Получить все последние новости. """
+def extract_article_data(new: BeautifulSoup, url: str) -> dict[str, str]:
+    """
+    Извлекает данные статьи из HTML и возвращает их в виде словаря.
 
-    url = 'https://www.kitco.com/mining/'
-    r = requests.get(url=url)
-    soup = BeautifulSoup(r.text, 'lxml')
-    news = dict()
-    mining_news = soup.find_all('div', class_='mining-news--with-image')
-    for new in mining_news:
-        article_url = (f"{url}"
-                       f"{new.find('div', class_='mining-news--content').find('a').get('href')}")
+    Args:
+        new: BeautifulSoup объект для новости.
+        url (str): URL страницы новостей.
 
-        article_title = new.find('div', class_='mining-news--content').find('a').text.strip()
-        article_description = new.find('div', class_='mining-news--content---text').find('p').text.strip()
-        article_date = (new.find('div', 'mining-news--content')
-                        .find('div', class_='mining-news--content---source-date')
-                        .find('span', class_='mining-news--content---date').text.strip()
-                        )
-        article_category = 'Mining news'
-        article_id = create_an_id(article_url)
+    Returns:
+        dict[str, str]: Словарь с данными статьи.
+    """
+    article_url: str = f"{url}{new.find('div', class_='mining-news--content').find('a').get('href')}"
+    article_title: str = new.find('div', class_='mining-news--content').find('a').text.strip()
+    article_description: str = new.find('div', class_='mining-news--content---text').find('p').text.strip()
+    article_date: str = (new.find('div', 'mining-news--content')
+                         .find('div', class_='mining-news--content---source-date')
+                         .find('span', class_='mining-news--content---date').text.strip()
+                         )
 
-        news[article_id] = {
-            'article_title': article_title,
-            'article_url': article_url,
-            'article_category': article_category,
-            'article_date': article_date,
-            'article_description': article_description
-        }
-
-    with open(FILE_PATH, mode='w', encoding='utf-8') as file:
-        json.dump(news, file, indent=4, ensure_ascii=False)
+    return {
+        'article_title': article_title,
+        'article_url': article_url,
+        'article_category': 'Mining news',
+        'article_date': article_date,
+        'article_description': article_description
+    }
 
 
-def get_mining_fresh_news():
-    """ Получить только последние новости. """
+def get_mining_news() -> None:
+    """
+    Получает и записывает в json-файл все новости горнодобывающей промышленности.
+    """
+    try:
+        response: requests.Response = requests.get(url=KITCO_NEWS_URL)
+        response.raise_for_status()
+        soup: BeautifulSoup = BeautifulSoup(response.text, 'lxml')
+        news: dict[str, dict] = {}
+        mining_news: list = soup.find_all('div', class_='mining-news--with-image')
 
-    with open(FILE_PATH, mode='r', encoding='utf-8') as file:
-        news = json.load(file)
+        for new in mining_news:
+            article_id: str = create_an_id_for_article(
+                f"{KITCO_NEWS_URL}{new.find('div', class_='mining-news--content').find('a').get('href')}")
+            news[article_id] = extract_article_data(new, KITCO_NEWS_URL)
 
-    fresh_news = dict()
-    url = 'https://www.kitco.com/mining/'
-    r = requests.get(url=url)
-    soup = BeautifulSoup(r.text, 'lxml')
-    mining_news = soup.find_all('div', class_='mining-news--with-image')
-    article_category = 'Mining news'
+        with open(FILE_PATH, mode='w', encoding='utf-8') as file:
+            json.dump(news, file, indent=4, ensure_ascii=False)
 
-    for new in mining_news:
-        article_url = (f"{url}"
-                       f"{new.find('div', class_='mining-news--content').find('a').get('href')}")
-        article_id = create_an_id(article_url)
-        if article_id in news:
-            continue
-        else:
-            article_title = new.find('div', class_='mining-news--content').find('a').text.strip()
-            article_description = new.find('div', class_='mining-news--content---text').find('p').text.strip()
-            article_date = (new.find('div', 'mining-news--content')
-                            .find('div', class_='mining-news--content---source-date')
-                            .find('span', class_='mining-news--content---date').text.strip()
-                            )
+    except Exception as e:
+        print(f'An error occured: {e}')
 
-            news[article_id] = {
-                'article_title': article_title,
-                'article_url': article_url,
-                'article_category': article_category,
-                'article_date': article_date,
-                'article_description': article_description
-            }
 
-            fresh_news[article_id] = {
-                'article_title': article_title,
-                'article_url': article_url,
-                'article_category': article_category,
-                'article_date': article_date,
-                'article_description': article_description
-            }
+def get_fresh_mining_news() -> dict[str, dict[str, str]]:
+    """
+    Получить только последние новости горнодобывающей промышленности.
 
-    with open(FILE_PATH, mode='w', encoding='utf-8') as file:
-        json.dump(news, file, indent=4, ensure_ascii=False)
+    Returns:
+        dict[str, dict[str, str]]: Словарь с данными только о новых статьях.
+    """
+    fresh_news: dict[str, dict[str, str]] = {}
+
+    try:
+        with open(FILE_PATH, mode='r', encoding='utf-8') as file:
+            news: dict[str, dict[str, str]] = json.load(file)
+
+        response: requests.Response = requests.get(url=KITCO_NEWS_URL)
+        response.raise_for_status()
+        soup: BeautifulSoup = BeautifulSoup(response.text, 'lxml')
+        mining_news: list = soup.find_all('div', class_='mining-news--with-image')
+
+        for new in mining_news:
+            article_id: str = create_an_id_for_article(
+                f"{KITCO_NEWS_URL}{new.find('div', class_='mining-news--content').find('a').get('href')}")
+            if article_id not in news:
+                article_data: dict[str, str] = extract_article_data(new, KITCO_NEWS_URL)
+                news[article_id] = article_data
+                fresh_news[article_id] = article_data
+
+        with open(FILE_PATH, mode='w', encoding='utf-8') as file:
+            json.dump(news, file, indent=4, ensure_ascii=False)
+
+    except Exception as e:
+        print(f'Произошла непредвиденная ошибка: {e}')
+
     return fresh_news
 
 
-def main():
+def main() -> dict[str, dict[str, str]] | None:
+    """Основная функция, вызывает функцию для получения новостей."""
     if os.path.isfile(FILE_PATH) and os.path.getsize(FILE_PATH) > 0:
-        return get_mining_fresh_news()
+        return get_fresh_mining_news()
     else:
         get_mining_news()
 
