@@ -66,13 +66,17 @@ async def check_if_fresh_news() -> None:
             print(f'Произошла непредвиденная ошибка: {ex}')
         await asyncio.sleep(int(REFRESH_INTERVAL_SECONDS))
 
+async def main_task():
+    """Главная асинхронная задача, запускающая и polling, и проверку новостей."""
+    task1 = asyncio.create_task(check_if_fresh_news())
+    task2 = asyncio.create_task(executor.start_polling(dp))
+    await asyncio.gather(task1, task2)
+
 
 if __name__ == '__main__':
     try:
-        asyncio.run(check_if_fresh_news())
+        asyncio.run(main_task())
     except KeyboardInterrupt:
         print('Бот остановлен пользователем.')
     except Exception as e:
         print(f'Произошла непредвиденная ошибка: {e}')
-    finally:
-        executor.start_polling(dp)
